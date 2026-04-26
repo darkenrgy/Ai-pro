@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: ai-pro
+  profiles:
+    active: dev
+
+server:
+    port: 8080
+
+#configration
+#login configration
+
+security:
+  rate-limit:
+    window-seconds: 60
+    ip-max-requests: 30
+    user-max-requests: 120
+  enforce-https: false
+
+ai:
+  moderation:
+    base-url: http://localhost:8000
+    timeout-ms: 1500
+

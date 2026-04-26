@@ -1,0 +1,12 @@
+Index: .github/README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.github/README.md b/.github/README.md
+new file mode 100644
+--- /dev/null	(revision 33950bb33f06a3097d5f22df92059aa66b02cc5b)
++++ b/.github/README.md	(revision 33950bb33f06a3097d5f22df92059aa66b02cc5b)
+@@ -0,0 +1,2 @@
++# ai-pro
++Ai-powered secure communicatio system

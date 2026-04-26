@@ -1,0 +1,88 @@
+server:
+  port: ${SERVER_PORT:8443}
+  ssl:
+    enabled: ${SERVER_SSL_ENABLED:true}
+    key-store: ${SERVER_SSL_KEY_STORE:file:./.dev-ssl/backend-local.p12}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:changeit}
+    key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
+    key-alias: ${SERVER_SSL_KEY_ALIAS:auth-local}
+
+# data source configuration
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ai-pro?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 1203
+    hikari:
+      pool-name: HikariCP
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+      validation-timeout: 5000
+      leak-detection-threshold: 15000
+  # jpa and hibernate configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  # redis configuration (disabled for local development without Redis)
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     database: 0
+  #     timeout: 60000ms
+  #     lettuce:
+  #       pool:
+  #         max-active: 8
+  #         max-idle: 8
+  #         min-idle: 0
+  #         max-wait: -1ms
+security:
+  redis:
+    enabled: true
+  jwt:
+    secret: "${JWT_SECRET:mysecretkey;kTA1p37I%<MWT=%:8M}J#62FgN[;lks}mySecureJWTSecretKey123456789"
+    issuer: "${JWT_ISSUER:api.subtring.com}"
+    access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
+    remember-me-access-ttl-seconds: ${JWT_REMEMBER_ME_ACCESS_TTL_SECONDS:604800}
+    refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:86400}
+  # AES encryption for secure image payloads
+  encryption:
+    aes-key: "${AES_KEY:U2FsdGVkX1/2c3N5L8J9q0K7v5M8n2P3R4S6T7U9W1X3Y5Z7a9b0c2d4e6f8g0h2}"
+  # RSA keys for digital signatures (optional - generate test signatures if not set)
+  rsa:
+    private-key: "${RSA_PRIVATE_KEY:}"
+    public-key: "${RSA_PUBLIC_KEY:}"
+    refresh-token-cookie-name: "${JWT_REFRESH_TOKEN_COOKIE_NAME:refresh_token}"
+    cookie-secure: ${JWT_COOKIE_SECURE:true}
+    cookie-http-only: ${JWT_COOKIE_HTTP_ONLY:true}
+    cookie-same-site: "${JWT_COOKIE_SAME_SITE:lax}"
+  rate-limit:
+    enabled: false
+    window-seconds: 60
+    ip-max-requests: 60
+    user-max-requests: 180
+  enforce-https: true
+
+# logging configuration
+logging:
+  level:
+    root: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    com.darkenrgy.login.auth.security.RequestLoggingFilter: ERROR
+    com.darkenrgy.login.auth.security.WebSocketAuthenticationInterceptor: WARN
+    org.springframework.web.socket: ERROR
+    org.springframework.messaging.simp: ERROR
+    io.lettuce.core: ERROR
+    com.darkenrgy.login.auth.services.impl.ChatServiceImpl: ERROR
+    com.darkenrgy.login.auth.services.impl.FileServiceImpl: ERROR
+    com.darkenrgy.login.auth.services.impl.SecureImageServiceImpl: ERROR
