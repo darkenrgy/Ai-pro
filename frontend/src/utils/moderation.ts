@@ -4,7 +4,7 @@ import type {
   ModerationInput,
   ModerationResult,
 } from '@/types/chat';
-import { submitModerationReview } from '@/services/moderationService';
+import { isModerationApiConfigured, submitModerationReview } from '@/services/moderationService';
 
 export type QuickModerationCheck = {
   suspicious: boolean;
@@ -94,6 +94,113 @@ const CATEGORY_PATTERNS: Record<Exclude<ModerationCategory, 'none'>, Array<{ pat
   weapons: WEAPONS_PATTERNS,
 };
 
+const CATEGORY_KEYWORDS: Record<Exclude<ModerationCategory, 'none'>, Array<{ term: string; label: string; weight: number }>> = {
+  trafficking: [
+    { term: 'secretly', label: 'secretly trafficking', weight: 24 },
+    { term: 'hide', label: 'hide victims keyword', weight: 22 },
+    { term: 'debt', label: 'debt bondage keyword', weight: 26 },
+    { term: 'arrange', label: 'arrange trafficking keyword', weight: 20 },
+    { term: 'control', label: 'control victims keyword', weight: 22 },
+    { term: 'workers', label: 'workers exploitation keyword', weight: 18 },
+    { term: 'exploit', label: 'exploit keyword', weight: 24 },
+    { term: 'servitude', label: 'servitude keyword', weight: 24 },
+    { term: 'domestic', label: 'domestic servitude keyword', weight: 20 },
+    { term: 'workshop', label: 'hidden workshop keyword', weight: 18 },
+    { term: 'trap', label: 'trap victims keyword', weight: 20 },
+    { term: 'fake jobs', label: 'fake jobs keyword', weight: 22 },
+    { term: 'documents', label: 'confiscate documents keyword', weight: 20 },
+    { term: 'trafficking', label: 'trafficking keyword', weight: 26 },
+    { term: 'forced labor', label: 'forced labor keyword', weight: 26 },
+    { term: 'forced prostitution', label: 'forced prostitution keyword', weight: 28 },
+    { term: 'debt bondage', label: 'debt bondage keyword', weight: 24 },
+    { term: 'passport', label: 'passport control keyword', weight: 18 },
+    { term: 'नाबालिग', label: 'minor trafficking keyword (hi)', weight: 24 },
+    { term: 'तस्करी', label: 'trafficking keyword (hi)', weight: 26 },
+    { term: 'जबरन मजदूरी', label: 'forced labor keyword (hi)', weight: 28 },
+    { term: 'trata', label: 'trafficking keyword (es)', weight: 24 },
+    { term: 'explotacion', label: 'exploitation keyword (es)', weight: 22 },
+    { term: 'mineures', label: 'minors keyword (fr)', weight: 22 },
+    { term: 'travail force', label: 'forced labor keyword (fr)', weight: 24 },
+    { term: 'मजदूरी', label: 'labor keyword (hi)', weight: 20 },
+    { term: 'गुलामी', label: 'slavery keyword (hi)', weight: 22 },
+    { term: 'استغلال', label: 'exploitation keyword (ar)', weight: 22 },
+    { term: 'قاصرات', label: 'minor girls keyword (ar)', weight: 22 },
+  ],
+  child_exploitation: [
+    { term: 'intimate', label: 'intimate content keyword', weight: 26 },
+    { term: 'picture', label: 'picture request keyword', weight: 24 },
+    { term: 'request', label: 'request keyword', weight: 18 },
+    { term: 'abuse', label: 'abuse keyword', weight: 28 },
+    { term: 'bride', label: 'child bride keyword', weight: 26 },
+    { term: 'schoolgirl', label: 'schoolgirl keyword', weight: 24 },
+    { term: 'schoolboy', label: 'schoolboy keyword', weight: 24 },
+    { term: 'csam', label: 'csam keyword', weight: 36 },
+    { term: 'underage', label: 'underage keyword', weight: 28 },
+    { term: 'minor', label: 'minor keyword', weight: 26 },
+    { term: 'child sexual', label: 'child sexual keyword', weight: 34 },
+    { term: 'nude', label: 'nude keyword', weight: 26 },
+    { term: 'explicit', label: 'explicit keyword', weight: 24 },
+    { term: 'नाबालिग', label: 'minor keyword (hi)', weight: 26 },
+    { term: 'अश्लील', label: 'explicit keyword (hi)', weight: 28 },
+    { term: 'वीडियो', label: 'video keyword (hi)', weight: 18 },
+    { term: 'अंतरंग', label: 'intimate keyword (hi)', weight: 26 },
+    { term: 'नग्न', label: 'nude keyword (hi)', weight: 26 },
+    { term: 'चैट', label: 'chat keyword (hi)', weight: 16 },
+    { term: 'फोटो', label: 'photo keyword (hi)', weight: 18 },
+    { term: 'menor', label: 'minor keyword (es)', weight: 26 },
+    { term: 'explotacion sexual', label: 'sexual exploitation keyword (es)', weight: 32 },
+    { term: 'desnuda', label: 'nude keyword (es)', weight: 26 },
+    { term: 'intimida', label: 'intimate keyword (es)', weight: 22 },
+    { term: 'mineur', label: 'minor keyword (fr)', weight: 24 },
+    { term: 'contenu sexuel', label: 'sexual content keyword (fr)', weight: 28 },
+    { term: 'nue', label: 'nude keyword (fr)', weight: 24 },
+    { term: 'enfant', label: 'child keyword (fr)', weight: 20 },
+    { term: 'قاصر', label: 'minor keyword (ar)', weight: 26 },
+    { term: 'جنسي', label: 'sexual keyword (ar)', weight: 24 },
+  ],
+  weapons: [
+    { term: 'assault', label: 'assault weapon keyword', weight: 28 },
+    { term: 'prohibited', label: 'prohibited weapon keyword', weight: 26 },
+    { term: 'hidden', label: 'hidden cache keyword', weight: 24 },
+    { term: 'broker', label: 'weapons broker keyword', weight: 26 },
+    { term: 'cache', label: 'weapon cache keyword', weight: 26 },
+    { term: 'handgun', label: 'handgun keyword', weight: 22 },
+    { term: 'permit', label: 'without permit keyword', weight: 20 },
+    { term: 'unregistered', label: 'unregistered keyword', weight: 24 },
+    { term: 'illegal weapons', label: 'illegal weapons keyword', weight: 30 },
+    { term: 'weapon', label: 'weapon keyword', weight: 22 },
+    { term: 'gun', label: 'gun keyword', weight: 22 },
+    { term: 'rifle', label: 'rifle keyword', weight: 22 },
+    { term: 'ammo', label: 'ammo keyword', weight: 20 },
+    { term: 'ammunition', label: 'ammunition keyword', weight: 20 },
+    { term: 'smuggle', label: 'smuggling keyword', weight: 24 },
+    { term: 'black market', label: 'black market keyword', weight: 24 },
+    { term: 'हथियार', label: 'weapons keyword (hi)', weight: 24 },
+    { term: 'बंदूक', label: 'gun keyword (hi)', weight: 24 },
+    { term: 'लाइसेंस', label: 'license keyword (hi)', weight: 20 },
+    { term: 'बारूद', label: 'ammo keyword (hi)', weight: 22 },
+    { term: 'गुप्त', label: 'secret keyword (hi)', weight: 20 },
+    { term: 'भेजो', label: 'send/ship keyword (hi)', weight: 16 },
+    { term: 'तस्करी', label: 'smuggling keyword (hi)', weight: 22 },
+    { term: 'armas', label: 'weapons keyword (es)', weight: 22 },
+    { term: 'municion', label: 'ammo keyword (es)', weight: 22 },
+    { term: 'permiso', label: 'permit keyword (es)', weight: 20 },
+    { term: 'licencia', label: 'license keyword (es)', weight: 20 },
+    { term: 'prohibidas', label: 'prohibited keyword (es)', weight: 22 },
+    { term: 'armes', label: 'weapons keyword (fr)', weight: 22 },
+    { term: 'munitions', label: 'ammo keyword (fr)', weight: 22 },
+    { term: 'permis', label: 'permit keyword (fr)', weight: 20 },
+    { term: 'interdites', label: 'banned keyword (fr)', weight: 22 },
+    { term: 'secret', label: 'secret keyword (fr)', weight: 20 },
+    { term: 'تهريب', label: 'smuggling keyword (ar)', weight: 24 },
+    { term: 'سلاح', label: 'weapon keyword (ar)', weight: 24 },
+    { term: 'أسلحة', label: 'weapons keyword (ar)', weight: 24 },
+    { term: 'اسلحة', label: 'weapons keyword no-hamza (ar)', weight: 24 },
+    { term: 'ذخيرة', label: 'ammo keyword (ar)', weight: 22 },
+    { term: 'تصريح', label: 'permit keyword (ar)', weight: 20 },
+  ],
+};
+
 function getSubjectKey(sessionId?: string, userId?: string) {
   return [sessionId ?? 'anonymous-session', userId ?? 'anonymous-user'].join('|');
 }
@@ -181,6 +288,23 @@ function detectPatterns(normalizedText: string): DetectionHit[] {
   return hits;
 }
 
+function detectKeywordSignals(normalizedText: string): DetectionHit[] {
+  const hits: DetectionHit[] = [];
+
+  for (const [category, signals] of Object.entries(CATEGORY_KEYWORDS) as Array<[
+    Exclude<ModerationCategory, 'none'>,
+    Array<{ term: string; label: string; weight: number }>
+  ]>) {
+    for (const signal of signals) {
+      if (normalizedText.includes(signal.term)) {
+        hits.push({ category, label: signal.label, weight: signal.weight });
+      }
+    }
+  }
+
+  return hits;
+}
+
 function resolveCategory(hits: DetectionHit[]): Exclude<ModerationCategory, 'none'> | 'none' {
   if (hits.length === 0) {
     return 'none';
@@ -208,7 +332,7 @@ function resolveRiskScore(hits: DetectionHit[]) {
 function evaluateLocally(text: string) {
   const normalizedText = normalizeText(text);
   const detectedLanguage = detectLanguage(text);
-  const hits = detectPatterns(normalizedText);
+  const hits = [...detectPatterns(normalizedText), ...detectKeywordSignals(normalizedText)];
   const riskScore = resolveRiskScore(hits);
   const category = resolveCategory(hits);
   const uniqueLabels = Array.from(new Set(hits.map((hit) => hit.label)));
@@ -284,6 +408,31 @@ function withCompatFields(result: {
   };
 }
 
+function mapRemoteCategory(category: string): ModerationCategory {
+  if (category === 'human_trafficking') {
+    return 'trafficking';
+  }
+  if (category === 'illegal_weapons') {
+    return 'weapons';
+  }
+  if (category === 'child_exploitation') {
+    return 'child_exploitation';
+  }
+  return 'none';
+}
+
+function mapRemoteAction(action: string, riskScore: number): ModerationAction {
+  if (action === 'block') {
+    return 'block';
+  }
+
+  if (action === 'warn' || action === 'strong_warn') {
+    return 'warn';
+  }
+
+  return riskScore >= WARN_THRESHOLD ? 'warn' : 'allow';
+}
+
 async function enrichWithRemoteApi(input: ModerationInput, localResult: ReturnType<typeof evaluateLocally>): Promise<ModerationResult> {
   const remoteResponse = await submitModerationReview(input);
 
@@ -306,24 +455,29 @@ async function enrichWithRemoteApi(input: ModerationInput, localResult: ReturnTy
     });
   }
 
+  const remoteRiskScore = Number.isFinite(remoteResponse.risk_score) ? remoteResponse.risk_score : localResult.riskScore;
+  const remoteFlagged = typeof remoteResponse.flagged === 'boolean'
+    ? remoteResponse.flagged
+    : remoteRiskScore >= WARN_THRESHOLD;
+
   return withCompatFields({
-    riskScore: remoteResponse.risk_score,
-    flagged: remoteResponse.flagged,
-    category: remoteResponse.category,
-    action: remoteResponse.action,
-    blockSession: remoteResponse.block_session,
-    detectedLanguage: remoteResponse.detected_language,
-    userViolationCount: remoteResponse.user_violation_count,
-    sessionViolationCount: remoteResponse.session_violation_count,
-    matchedKeywords: remoteResponse.matched_keywords,
-    matchedPatterns: remoteResponse.matched_patterns,
+    riskScore: remoteRiskScore,
+    flagged: remoteFlagged,
+    category: mapRemoteCategory(String(remoteResponse.category ?? 'safe')),
+    action: mapRemoteAction(String(remoteResponse.action ?? 'allow'), remoteRiskScore),
+    blockSession: Boolean(remoteResponse.block_session),
+    detectedLanguage: remoteResponse.detected_language ?? localResult.detectedLanguage,
+    userViolationCount: remoteResponse.user_violation_count ?? readLocalCounts(input.sessionId, input.userId).userViolationCount,
+    sessionViolationCount: remoteResponse.session_violation_count ?? readLocalCounts(input.sessionId, input.userId).sessionViolationCount,
+    matchedKeywords: Array.isArray(remoteResponse.matched_keywords) ? remoteResponse.matched_keywords : localResult.matchedKeywords,
+    matchedPatterns: Array.isArray(remoteResponse.matched_patterns) ? remoteResponse.matched_patterns : localResult.matchedPatterns,
   });
 }
 
 export async function analyzeModerationInput(input: ModerationInput): Promise<ModerationResult> {
   const safeContent = input.content.slice(0, 4000);
   const localResult = evaluateLocally(safeContent);
-  const shouldEscalate = Boolean(input.sessionId && input.userId && (localResult.flagged || input.type === 'image'));
+  const shouldEscalate = Boolean(isModerationApiConfigured() && input.sessionId && input.userId);
 
   if (!shouldEscalate) {
     const state = input.recordViolation && localResult.flagged

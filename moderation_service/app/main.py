@@ -139,7 +139,7 @@ async def analyze(request_body: ModerationRequest, request: Request) -> Moderati
     prediction = predict_illegal_risk(prepared_text, model_artifact)
 
     user_hash, session_hash, user_count, session_count = _get_counts(request_body)
-    if prediction.flagged:
+    if prediction.flagged and request_body.record_violation:
         user_count, session_count = store.increment_violation(user_hash, session_hash, prediction.risk_score)
 
     base_action = action_from_score(prediction.risk_score)
@@ -153,6 +153,9 @@ async def analyze(request_body: ModerationRequest, request: Request) -> Moderati
         block_session=block_session,
         user_violation_count=user_count,
         session_violation_count=session_count,
+        detected_language="unknown",
+        matched_keywords=[],
+        matched_patterns=[],
     )
 
 

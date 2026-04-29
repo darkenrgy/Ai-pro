@@ -1,6 +1,7 @@
 import type { ModerationApiResponse, ModerationInput } from '@/types/chat';
 
-const API_BASE_URL = import.meta.env.VITE_MODERATION_API_URL?.replace(/\/$/, '') ?? '';
+const DEFAULT_DEV_MODERATION_API_URL = import.meta.env.DEV ? 'http://127.0.0.1:8001' : '';
+const API_BASE_URL = (import.meta.env.VITE_MODERATION_API_URL ?? DEFAULT_DEV_MODERATION_API_URL).replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_MODERATION_TIMEOUT_MS ?? 1500);
 
 export function isModerationApiConfigured() {

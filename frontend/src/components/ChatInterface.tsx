@@ -53,6 +53,7 @@ export const ChatInterface: React.FC = () => {
   const [warningMessage, setWarningMessage] = useState('');
   const stompRef = useRef<Client | null>(null);
   const userProfilesRef = useRef<Record<string, UserDto>>({});
+  const messagesContainerRef = useRef<HTMLElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const connectedParticipants = useMemo(() => {
@@ -237,7 +238,18 @@ export const ChatInterface: React.FC = () => {
   }, [sessionId, user, chatKey]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isNearBottom = distanceFromBottom < 120;
+
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const handleUnlockChat = async (event: React.FormEvent) => {
@@ -449,7 +461,7 @@ export const ChatInterface: React.FC = () => {
               </div>
             </section>
 
-            <section className="messages-container">
+            <section className="messages-container" ref={messagesContainerRef}>
               {messages.length === 0 ? (
                 <div className="no-messages">No messages yet. Select a connected user and start the conversation.</div>
               ) : (

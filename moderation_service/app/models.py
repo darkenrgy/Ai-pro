@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -19,6 +19,8 @@ class ModerationRequest(BaseModel):
     user_id: str = Field(min_length=1)
     image_base64: str | None = None
     image_mime_type: str | None = None
+    record_violation: bool = False
+    metadata: dict[str, Any] | None = None
 
     @field_validator("content")
     @classmethod
@@ -44,3 +46,6 @@ class ModerationResponse(BaseModel):
     block_session: bool
     user_violation_count: int = 0
     session_violation_count: int = 0
+    detected_language: str = "unknown"
+    matched_keywords: list[str] = Field(default_factory=list)
+    matched_patterns: list[str] = Field(default_factory=list)

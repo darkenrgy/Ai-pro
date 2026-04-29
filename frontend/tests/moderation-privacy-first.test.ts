@@ -28,4 +28,26 @@ describe('privacy-first moderation', () => {
     expect(result.action).not.toBe('allow');
     expect(result.riskScore).toBeGreaterThanOrEqual(30);
   });
+
+  it('flags hindi trafficking sample from dataset', async () => {
+    const result = await analyzeModerationText('नाबालिगों को जबरन काम पर लगाओ', {
+      sessionId: 'session-hi',
+      userId: 'user-hi',
+    });
+
+    expect(result.flagged).toBe(true);
+    expect(result.action).not.toBe('allow');
+    expect(result.riskScore).toBeGreaterThanOrEqual(30);
+  });
+
+  it('flags arabic weapons sample from dataset', async () => {
+    const result = await analyzeModerationText('تهريب ذخيرة وأسلحة', {
+      sessionId: 'session-ar',
+      userId: 'user-ar',
+    });
+
+    expect(result.flagged).toBe(true);
+    expect(result.action).not.toBe('allow');
+    expect(result.riskScore).toBeGreaterThanOrEqual(30);
+  });
 });
